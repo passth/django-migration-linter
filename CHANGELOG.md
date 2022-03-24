@@ -1,8 +1,21 @@
-## 4.0.0 (unreleased)
+## 4.1.0 (unreleased)
 
-- Drop support for Python 2.7 and 3.5
-- Drop support for Django 1.11, 2.0, 2.1, 3.0
+- Allow configuring logging for `makemigrations` command and unify behaviour with `lintmigrations` (issue #207)
+- Adapt `--warnings-as-errors` option to allow selecting some migration tests only (issue #201)
+- Add `sql_analyser` option to `makemigrations` in order to specify the SQL analyser to use (issue #208)
+- Make `project_root_path` and `verbosity` configurable from other setting source (issue #203)
+
+## 4.0.0
+
+- Drop support for Python 2.7, 3.5 and 3.6
+- Add support for Python 3.10
+- Drop support for Django 1.11, 2.0, 2.1, 3.0 and 3.1
+- Add support for Django 4.0
 - Fix index creation detection when table is being created in the transaction (issue #178)
+- Handle unique index creation as adding a unique constraint (issue #183)
+- Allow any option to be set/unset in config file (issue #167)
+- Allow using Django settings for any option to be set/unset (issue #198)
+- Raise when unsupported database vendor, allow passing an option to select SQL analyser (issue #138 and #169)
 
 ## 3.0.1
 

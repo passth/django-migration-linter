@@ -9,7 +9,11 @@ from django.db.migrations.writer import MigrationWriter
 
 from django_migration_linter import MigrationLinter
 
-from ..utils import register_linting_configuration_options
+from ..utils import (
+    configure_logging,
+    extract_warnings_as_errors_option,
+    register_linting_configuration_options,
+)
 
 
 def ask_should_keep_migration():
@@ -42,6 +46,8 @@ class Command(MakeMigrationsCommand):
         self.database = options["database"]
         self.exclude_migrations_tests = options["exclude_migration_tests"]
         self.warnings_as_errors = options["warnings_as_errors"]
+        self.sql_analyser = options["sql_analyser"]
+        configure_logging(options["verbosity"])
         return super(Command, self).handle(*app_labels, **options)
 
     def write_migration_files(self, changes):
@@ -67,13 +73,20 @@ class Command(MakeMigrationsCommand):
             else default_should_keep_migration
         )
 
+        (
+            warnings_as_errors_tests,
+            all_warnings_as_errors,
+        ) = extract_warnings_as_errors_option(self.warnings_as_errors)
+
         # Lint migrations
         linter = MigrationLinter(
             path=os.environ["DJANGO_SETTINGS_MODULE"],
             database=self.database,
             no_cache=True,
             exclude_migration_tests=self.exclude_migrations_tests,
-            warnings_as_errors=self.warnings_as_errors,
+            warnings_as_errors_tests=warnings_as_errors_tests,
+            all_warnings_as_errors=all_warnings_as_errors,
+            analyser_string=self.sql_analyser,
         )
 
         for app_label, app_migrations in changes.items():

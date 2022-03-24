@@ -20,7 +20,7 @@ from .constants import (
     EXPECTED_DATA_MIGRATION_ARGS,
 )
 from .operations import IgnoreMigration
-from .sql_analyser import analyse_sql_statements
+from .sql_analyser import analyse_sql_statements, get_sql_analyser_class
 from .utils import clean_bytes_to_str, get_migration_abspath, split_migration_path
 
 logger = logging.getLogger("django_migration_linter")
@@ -55,8 +55,10 @@ class MigrationLinter(object):
         only_unapplied_migrations=False,
         exclude_migration_tests=None,
         quiet=None,
-        warnings_as_errors=False,
+        warnings_as_errors_tests=None,
+        all_warnings_as_errors=False,
         no_output=False,
+        analyser_string=None,
     ):
         # Store parameters and options
         self.django_path = path
@@ -73,8 +75,13 @@ class MigrationLinter(object):
         self.only_applied_migrations = only_applied_migrations
         self.only_unapplied_migrations = only_unapplied_migrations
         self.quiet = quiet or []
-        self.warnings_as_errors = warnings_as_errors
+        self.warnings_as_errors_tests = warnings_as_errors_tests
+        self.all_warnings_as_errors = all_warnings_as_errors
         self.no_output = no_output
+        self.sql_analyser_class = get_sql_analyser_class(
+            settings.DATABASES[self.database]["ENGINE"],
+            analyser_string=analyser_string,
+        )
 
         # Initialise counters
         self.reset_counters()
@@ -161,8 +168,8 @@ class MigrationLinter(object):
 
         sql_statements = self.get_sql(app_label, migration_name)
         errors, ignored, warnings = analyse_sql_statements(
+            self.sql_analyser_class,
             sql_statements,
-            settings.DATABASES[self.database]["ENGINE"],
             self.exclude_migration_tests,
         )
 
@@ -174,9 +181,17 @@ class MigrationLinter(object):
         if warnings_data:
             warnings += warnings_data
 
-        if self.warnings_as_errors:
+        if self.all_warnings_as_errors:
             errors += warnings
             warnings = []
+        elif self.warnings_as_errors_tests:
+            new_warnings = []
+            for w in warnings:
+                if w["code"] in self.warnings_as_errors_tests:
+                    errors.append(w)
+                else:
+                    new_warnings.append(w)
+            warnings = new_warnings
 
         # Fixme: have a more generic approach to handling errors/warnings/ignored/ok?
         if errors:
@@ -620,8 +635,8 @@ class MigrationLinter(object):
                 sql_statements.append(runsql.sql)
 
             sql_errors, sql_ignored, sql_warnings = analyse_sql_statements(
+                self.sql_analyser_class,
                 sql_statements,
-                settings.DATABASES[self.database]["ENGINE"],
                 self.exclude_migration_tests,
             )
             if sql_errors:
@@ -650,8 +665,8 @@ class MigrationLinter(object):
                 sql_statements.append(runsql.reverse_sql)
 
             sql_errors, sql_ignored, sql_warnings = analyse_sql_statements(
+                self.sql_analyser_class,
                 sql_statements,
-                settings.DATABASES[self.database]["ENGINE"],
                 self.exclude_migration_tests,
             )
             if sql_errors:
