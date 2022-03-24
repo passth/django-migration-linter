@@ -42,6 +42,23 @@ def has_add_unique_column(sql_statements, **kwargs):
     return not table_is_added_in_transaction
 
 
+def multiple_table_locks(sql_statements, **kwargs):
+    """Returns true if there are more than 2 table locks
+
+    go/created-at-migration-postportem
+    """
+    tables = set()
+
+    for sql in sql_statements:
+        result = re.search('ALTER TABLE "([\w]+)".*', sql)
+
+        if result:
+            table_name = result.group(1)
+            tables.add(table_name)
+
+    return len(tables) > 2
+
+
 class PostgresqlAnalyser(BaseAnalyser):
     migration_tests = [
         {
@@ -73,4 +90,15 @@ class PostgresqlAnalyser(BaseAnalyser):
             "mode": "transaction",
             "type": "error",
         },
+        {
+            "code": "MULTIPLE_TABLE_LOCKS",
+            "fn": multiple_table_locks,
+            "msg": (
+                "Do not lock more than one table at a time in the same "
+                "transaction to minimize the chance of deadlocks and "
+                "production issues. go/created-at-migration-postportem"
+            ),
+            "mode": "transaction",
+            "type": "error",
+        }
     ]
