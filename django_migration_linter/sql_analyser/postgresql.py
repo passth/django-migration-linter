@@ -94,7 +94,7 @@ class PostgresqlAnalyser(BaseAnalyser):
             "code": "MULTIPLE_TABLE_LOCKS",
             "fn": multiple_table_locks,
             "msg": (
-                "Do not lock more than one table at a time in the same "
+                "Do not lock more than two table at a time in the same "
                 "transaction to minimize the chance of deadlocks and "
                 "production issues. go/created-at-migration-postportem"
             ),
