@@ -1,4 +1,77 @@
-## 4.1.0 (unreleased)
+## 6.0.0
+
+Feature:
+- **Breaking change**: Handle custom Django app label when gathering migrations from git reference. (#262)
+This means that, an app that was previously referenced by its folder name, will now be referenced by its Django app label.
+
+Bug:
+- Consider `DEFAULT NULL` as no default value being defined (#302)
+
+Miscellaneous:
+- Add py.typed file (#303)
+- Add support for Django 5.2 (#304)
+- Add support for Python 3.14
+- Remove coverage from CI
+- Add support for Django 6.0
+
+## 5.2.0
+
+Feature:
+- Allow ignoring all initial migrations, with `--ignore-initial-migrations`
+
+Bug:
+- Don't detect an index creation during a transaction with an exclusive lock, when the table is being created (#264)
+
+Miscellaneous:
+- Add support for Python 3.13
+- Add support for Django 5.1
+- Drop support for Python 3.7 and 3.8
+- Mark md5 hashing as not used for security
+
+## 5.1.0
+
+Feature:
+- Support Django 5.0 `db_default` attribute (issue #275)
+- Allow ignoring the failures of `sqlmigrate` commands, with `--ignore-sqlmigrate-errors` option (issue #274)
+
+Bug:
+- Don't detect 'IS NOT NULL' as backward incompatible changes (issue #263)
+- Don't consider UNIQUE INDEX creation as making a column not nullable
+
+Miscellaneous:
+- Migrated from `setup.py` and `setup.cfg` to `pyproject.toml`
+- Add support for Python 3.12
+- Add support for Django 5.0
+- Avoid git command injections
+- Remove Codecov integration
+
+## 5.0.0
+
+- **Breaking change**: stop silently ignoring when the internal `sqlmigrate` call fails and the linter cannot analyse the migration.
+Instead, the linter crashes and lets the `sqlmigrate` error raise, in order to avoid letting a problematic migration pass.
+One common reason for such an error is the SQL generation which requires the database to be actually migrated in order to fetch actual constraint names from it.
+The crash is a sign to double-check the migration. But if you are certain the migration is safe, you can ignore it (issue #209)
+
+Features:
+- Fixed `RunPython` model import check when using a `through` object like `MyModel.many_to_many.through.objects.filter(...)` (issue #218)
+- Mark the `IgnoreMigration` operation as `elidable=True`
+- Handle `functools.partial` functions in RunPython data migrations
+- Add a new check, `CREATE_INDEX_EXCLUSIVE` to detect index creation while an exclusive lock is held
+
+Bug:
+- Don't detect not nullable field on partial index creation (issue #250)
+
+Miscellaneous:
+- Add support for Python 3.11
+- Add support for Django 4.1
+- Add support for Django 4.2
+- Drop support for Django 2.2
+- Internally rename "migration tests" to "migration checks"
+- Add dataclasses internally instead of custom dicts
+- Use pre-commit hooks for linting
+- Add `mypy` and `ruff` usages
+
+## 4.1.0
 
 - Allow configuring logging for `makemigrations` command and unify behaviour with `lintmigrations` (issue #207)
 - Adapt `--warnings-as-errors` option to allow selecting some migration tests only (issue #201)
