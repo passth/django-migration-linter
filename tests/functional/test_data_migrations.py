@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import unittest
 
@@ -102,6 +104,15 @@ class DataMigrationDetectionTestCase(unittest.TestCase):
         self.assertEqual(0, self.linter.nb_erroneous)
         self.assertFalse(self.linter.has_errors)
 
+    def test_partial_function(self):
+        reverse_migration = self.linter.migration_loader.disk_migrations[
+            ("app_data_migrations", "0004_partial_function")
+        ]
+        self.linter.lint_migration(reverse_migration)
+
+        self.assertEqual(1, self.linter.nb_warnings)
+        self.assertFalse(self.linter.has_errors)
+
 
 class DataMigrationModelImportTestCase(unittest.TestCase):
     def test_missing_get_model_import(self):
@@ -137,7 +148,7 @@ class DataMigrationModelImportTestCase(unittest.TestCase):
 
     def test_not_overlapping_model_name(self):
         """
-        Correct for the import error, but should raise a warning
+        Correct for the import error, but should raise a warning.
         """
 
         def forward_method(apps, schema_editor):
@@ -159,7 +170,7 @@ class DataMigrationModelImportTestCase(unittest.TestCase):
 
     def test_not_overlapping_one_param(self):
         """
-        Not an error, but should raise a warning
+        Not an error, but should raise a warning.
         """
 
         def forward_method(apps, schema_editor):
@@ -169,6 +180,24 @@ class DataMigrationModelImportTestCase(unittest.TestCase):
 
         issues = MigrationLinter.get_runpython_model_import_issues(forward_method)
         self.assertEqual(0, len(issues))
+
+    def test_m2m_through_orm_usage(self):
+        def forward_method(apps, schema_editor):
+            MyModel = apps.get_model("myapp", "MyModel")
+
+            MyModel.many_to_many.through.objects.filter(id=1).first()
+
+        issues = MigrationLinter.get_runpython_model_import_issues(forward_method)
+        self.assertEqual(0, len(issues))
+
+    def test_missing_m2m_through_orm(self):
+        def forward_method(apps, schema_editor):
+            from tests.test_project.app_data_migrations.models import MyModel
+
+            MyModel.many_to_many.through.objects.filter(id=1).first()
+
+        issues = MigrationLinter.get_runpython_model_import_issues(forward_method)
+        self.assertEqual(1, len(issues))
 
 
 class DataMigrationModelVariableNamingTestCase(unittest.TestCase):
@@ -289,13 +318,13 @@ class RunSQLMigrationTestCase(unittest.TestCase):
         runsql = migrations.RunSQL("sql;")
 
         error, ignored, warning = self.linter.lint_runsql(runsql)
-        self.assertEqual("RUNSQL_REVERSIBLE", warning[0]["code"])
+        self.assertEqual("RUNSQL_REVERSIBLE", warning[0].code)
 
     def test_sql_linting_error(self):
         runsql = migrations.RunSQL("ALTER TABLE t DROP COLUMN t;")
 
         error, ignored, warning = self.linter.lint_runsql(runsql)
-        self.assertEqual("DROP_COLUMN", error[0]["code"])
+        self.assertEqual("DROP_COLUMN", error[0].code)
 
     def test_sql_linting_error_array(self):
         runsql = migrations.RunSQL(
@@ -303,11 +332,11 @@ class RunSQLMigrationTestCase(unittest.TestCase):
         )
 
         error, ignored, warning = self.linter.lint_runsql(runsql)
-        self.assertEqual("DROP_COLUMN", error[0]["code"])
-        self.assertEqual("RENAME_COLUMN", error[1]["code"])
+        self.assertEqual("DROP_COLUMN", error[0].code)
+        self.assertEqual("RENAME_COLUMN", error[1].code)
 
     def test_sql_linting_error_args(self):
         runsql = migrations.RunSQL([("ALTER TABLE %s DROP COLUMN %s;", ("t", "c"))])
 
         error, ignored, warning = self.linter.lint_runsql(runsql)
-        self.assertEqual("DROP_COLUMN", error[0]["code"])
+        self.assertEqual("DROP_COLUMN", error[0].code)

@@ -2,7 +2,7 @@
 
 ## Command line usage
 
-The linter is installed as a Django app and is integrated through the Django management command system. 
+The linter is installed as a Django app and is integrated through the Django management command system.
 
 `python manage.py lintmigrations [app_label] [migration_name]`
 
@@ -17,7 +17,14 @@ The three main usages are:
 * Lint a specific migration
 `python manage.py lintmigrations app_label migration_name`
 
-Below the detailed command line options, which can all also be defined using a config file (`setup.cfg`, `tox.ini`, `pyproject.toml`, `.django_migration_linter.cfg`):
+Below the detailed command line options, which can all also be defined using a config file:
+- `settings.py`
+- `setup.cfg`
+- `tox.ini`
+- `pyproject.toml`
+- `.django_migration_linter.cfg`
+
+If you are using a config file, replace any dashes (`-`) with an underscore (`_`).
 
 | Parameter                                             | Description                                                                                                                                                                                                     |
 |-------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
@@ -40,6 +47,8 @@ Below the detailed command line options, which can all also be defined using a c
 | `--quiet or -q {ok,ignore,warning,error}`             | Suppress certain output messages, instead of writing them to stdout.                                                                                                                                            |
 | `--warnings-as-errors [MIGRATION_TEST_CODE [...]]`    | Handle warnings as errors and therefore return an error status code if we should. Optionally specify migration test codes to handle as errors. When no test code specified, all warnings are handled as errors. |
 | `--sql-analyser`                                      | Specify the SQL analyser that should be used. Allowed values: 'sqlite', 'mysql', 'postgresql'.                                                                                                                  |
+| `--ignore-sqlmigrate-errors`                          | Ignore failures of sqlmigrate commands.                                                                                                                                                                         |
+| `--ignore-initial-migrations`                         | Ignore initial migrations.                                                                                                                                                                                      |
 
 ## Django settings configuration
 
@@ -78,6 +87,7 @@ class Migration(migrations.Migration):
 ```
 
 Or you can restrict the migrations that should be selected by a file containing there paths with the `--include-migrations-from` option.
+Or you can ignore all initial migrations with the `--ignore-initial-migrations` option.
 
 ## Ignoring migration tests
 
@@ -85,7 +95,7 @@ You can also ignore backward incompatible migration tests by adding this option 
 
 `python manage.py lintmigrations --exclude-migration-tests ALTER_COLUMN`
 
-The migration test codes can be found in the [corresponding source code files](../django_migration_linter/sql_analyser/base.py).
+The migration test codes can be found in the [corresponding source code files](../src/django_migration_linter/sql_analyser/base.py).
 
 ## Production usage example
 

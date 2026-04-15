@@ -1,6 +1,10 @@
+from __future__ import annotations
+
 import tempfile
 import unittest
+from unittest.mock import patch
 
+from django.db import ProgrammingError
 from django.db.migrations import Migration
 
 from django_migration_linter import MigrationLinter
@@ -107,6 +111,28 @@ class LinterFunctionsTestCase(unittest.TestCase):
         with self.assertRaises(Exception):
             MigrationLinter.read_migrations_list(file_path)
 
+    @patch(
+        "django_migration_linter.migration_linter.call_command",
+        side_effect=ProgrammingError,
+    )
+    def test_raise_exception_on_sqlmigrate_error(self, call_command_mock):
+        linter = MigrationLinter(
+            exclude_migration_tests=[], database="mysql", ignore_sqlmigrate_errors=False
+        )
+        with self.assertRaises(ProgrammingError):
+            linter.get_sql("app_correct", "0002_foo")
+
+    @patch(
+        "django_migration_linter.migration_linter.call_command",
+        side_effect=ProgrammingError,
+    )
+    def test_ignore_exception_on_sqlmigrate_error(self, call_command_mock):
+        linter = MigrationLinter(
+            exclude_migration_tests=[], database="mysql", ignore_sqlmigrate_errors=True
+        )
+        sql_result = linter.get_sql("app_correct", "0002_foo")
+        self.assertEqual([], sql_result)
+
     def test_read_migrations_no_file(self):
         migration_list = MigrationLinter.read_migrations_list(None)
         self.assertIsNone(migration_list)
@@ -144,3 +170,15 @@ class LinterFunctionsTestCase(unittest.TestCase):
             ]
         )
         self.assertEqual(2, len(list(migrations)))
+
+    def test_ignore_initial_migrations(self):
+        linter = MigrationLinter(ignore_initial_migrations=True)
+
+        self.assertTrue(
+            linter.should_ignore_migration(
+                "app_correct", "0001_initial", is_initial=True
+            )
+        )
+        self.assertFalse(
+            linter.should_ignore_migration("app_correct", "0002_foo", is_initial=False)
+        )

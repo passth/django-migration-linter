@@ -25,23 +25,24 @@ On data migrations, the linter will show a warning when:
 
 You can ignore checks through the `--exclude-migration-tests` option by specifying any of the codes:
 
-| Code                               | Description                                                                                                          | Default type |
-|------------------------------------|----------------------------------------------------------------------------------------------------------------------|--------------|
-| `NOT_NULL`                         | Not NULL constraint on columns                                                                                       | Error        |
-| `DROP_COLUMN`                      | Dropping columns                                                                                                     | Error        |
-| `DROP_TABLE`                       | Dropping tables                                                                                                      | Error        |
-| `RENAME_COLUMN`                    | Renaming columns                                                                                                     | Error        |
-| `RENAME_TABLE`                     | Renaming tables                                                                                                      | Error        |
-| `ALTER_COLUMN`                     | Altering columns (could be backward compatible)                                                                      | Error        |
-| `ADD_UNIQUE`                       | Add unique constraints                                                                                               | Error        |
-| `RUNPYTHON_REVERSIBLE`             | RunPython data migration is not reversible (missing reverse code)                                                    | Warning      |
-| `RUNPYTHON_ARGS_NAMING_CONVENTION` | By convention, RunPython names two arguments: apps, schema_editor                                                    | Warning      |
-| `RUNPYTHON_MODEL_IMPORT`           | Missing apps.get_model() calls for model                                                                             | Error        |
-| `RUNPYTHON_MODEL_VARIABLE_NAME`    | The model variable name is different from the model class itself                                                     | Warning      |
-| `RUNSQL_REVERSIBLE`                | RunSQL data migration is not reversible (missing reverse SQL)                                                        | Warning      |
-| `CREATE_INDEX`                     | (Postgresql specific) Creating an index without the concurrent keyword will lock the table and may generate downtime | Warning      |
-| `DROP_INDEX`                       | (Postgresql specific) Dropping an index without the concurrent keyword will lock the table and may generate downtime | Warning      |
-| `REINDEX`                          | (Postgresql specific) Reindexing will lock the table and may generate downtime                                       | Warning      |
+| Code                               | Description                                                                                                                                                                                                                                                                                                                       | Default type |
+|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------------|
+| `NOT_NULL`                         | Not NULL constraint on columns                                                                                                                                                                                                                                                                                                    | Error        |
+| `DROP_COLUMN`                      | Dropping columns                                                                                                                                                                                                                                                                                                                  | Error        |
+| `DROP_TABLE`                       | Dropping tables                                                                                                                                                                                                                                                                                                                   | Error        |
+| `RENAME_COLUMN`                    | Renaming columns                                                                                                                                                                                                                                                                                                                  | Error        |
+| `RENAME_TABLE`                     | Renaming tables                                                                                                                                                                                                                                                                                                                   | Error        |
+| `ALTER_COLUMN`                     | Altering columns (could be backward compatible)                                                                                                                                                                                                                                                                                   | Error        |
+| `ADD_UNIQUE`                       | Add unique constraints                                                                                                                                                                                                                                                                                                            | Error        |
+| `RUNPYTHON_REVERSIBLE`             | RunPython data migration is not reversible (missing reverse code)                                                                                                                                                                                                                                                                 | Warning      |
+| `RUNPYTHON_ARGS_NAMING_CONVENTION` | By convention, RunPython names two arguments: apps, schema_editor                                                                                                                                                                                                                                                                 | Warning      |
+| `RUNPYTHON_MODEL_IMPORT`           | Missing apps.get_model() calls for model                                                                                                                                                                                                                                                                                          | Error        |
+| `RUNPYTHON_MODEL_VARIABLE_NAME`    | The model variable name is different from the model class itself                                                                                                                                                                                                                                                                  | Warning      |
+| `RUNSQL_REVERSIBLE`                | RunSQL data migration is not reversible (missing reverse SQL)                                                                                                                                                                                                                                                                     | Warning      |
+| `CREATE_INDEX`                     | (Postgresql specific) Creating an index without the concurrent keyword will lock the table and may generate downtime                                                                                                                                                                                                              | Warning      |
+| `CREATE_INDEX_EXCLUSIVE`           | (Postgresql specific) Creating an index in a transaction acquiring an `EXCLUSIVE` lock (e.g. most `ALTER TABLE` statements acquire one) prolongs the exclusive lock on the table. Using concurrently clause does not address the issue. On the contrary, it prolongs the transaction, making it more dangerous in this situation. | Warning      |
+| `DROP_INDEX`                       | (Postgresql specific) Dropping an index without the concurrent keyword will lock the table and may generate downtime                                                                                                                                                                                                              | Warning      |
+| `REINDEX`                          | (Postgresql specific) Reindexing will lock the table and may generate downtime                                                                                                                                                                                                                                                    | Warning      |
 
 
 ## Details about backward incompatibilities
@@ -70,7 +71,7 @@ Only rolling back the code will make all new insertions crash because Django doe
 One would think that adding a default value in Django will prevent these errors.
 
 A common misconception is that the Django default value is translated to a database default.
-But Django actually uses the default value to fill new new column on existing rows and to set an unspecified column value to its default.
+But Django actually uses the default value to fill the new column on existing rows and to set an unspecified column value to its default.
 The latter is done at the application level, by Django and not by the database because the default value was dropped during migration.
 You can read more about this in the [Django and its default values blog post](https://medium.com/botify-labs/django-and-its-default-values-c21a13cff9f).
 
@@ -89,6 +90,7 @@ You can read more about this in the [Django and its default values blog post](ht
 
 :white_check_mark: **Solutions**:
 - Make the column nullable
+- Set a database default using the Django 5.0 attribute `db_default`. See the [Django docs](https://docs.djangoproject.com/en/dev/releases/5.0/#database-computed-default-values)
 - Set a database default using Django's [RunSQL](https://docs.djangoproject.com/en/dev/ref/migration-operations/#django.db.migrations.operations.RunSQL)
 - Set a database default using [django-add-default-value](https://github.com/3YOURMIND/django-add-default-value/)
 
@@ -111,7 +113,7 @@ Deletion operations often lead to errors during deployment.
 :white_check_mark: **Solutions**:
 - Deprecate the column before dropping it using [django-deprecate-fields](https://github.com/3YOURMIND/django-deprecate-fields/).
 This process requires to first make sure that the field is unused (for which `django-deprecate-fields` is made for).
-Once the column is unsed, drop it in a migration. This migration will require to be ignored through the [IgnoreMigration](/docs/usage.md#ignoring-migrations) for instance.
+Once the column is unused, drop it in a migration. This migration will require to be ignored through the [IgnoreMigration](/docs/usage.md#ignoring-migrations) for instance.
 - Don't actually drop the column, but fake the drop migration until you are sure you won't roll back.
 Be careful :warning: fake dropping a non-nullable column without a database default will create errors once the code is not aware of the column anymore.
 
@@ -162,7 +164,7 @@ At some point, start using the new column and delete the old one once the migrat
 3. rollback your DB to drop the unique constraint, and it should work again
 
 :white_check_mark: **Solutions**:
-- Do a multistep deployment. First, make sure that the code is only pushing a value if it is not unique.
+- Do a multistep deployment. First, make sure that the code is only pushing a value if it is unique.
 
 ### :arrow_forward: Importing a model in a RunPython migration
 

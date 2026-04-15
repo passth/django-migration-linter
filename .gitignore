@@ -13,3 +13,9 @@ env/
 .tox/
 *.sqlite3
 *.pickle
+.mypy_cache/
+.ruff_cache/
+venv/
+.python-version
+sqlite3
+.DS_Store

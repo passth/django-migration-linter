@@ -2,6 +2,8 @@
 
 A small note on how the linter is usually published to PyPi:
 
-- `python3 setup.py sdist bdist_wheel --universal`
+- `rm -r django_migration_linter.egg-info/ dist/`
+- `pip install --upgrade build`
+- `python -m build`
+- `pip install --upgrade twine`
 - `twine upload dist/django_migration_linter-X.Y.Z-py3-none-any.whl dist/django-migration-linter-X.Y.Z.tar.gz`
-

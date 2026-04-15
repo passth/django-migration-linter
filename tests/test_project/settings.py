@@ -10,11 +10,13 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/2.1/ref/settings/
 """
 
+from __future__ import annotations
+
 import os
 
-# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-from collections import OrderedDict
+import django
 
+# Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
@@ -56,7 +58,15 @@ INSTALLED_APPS = [
     "tests.test_project.app_data_migrations",
     "tests.test_project.app_make_not_null_with_django_default",
     "tests.test_project.app_make_not_null_with_lib_default",
+    "tests.test_project.app_create_index_exclusive",
+    "tests.test_project.app_with_custom_name.apps.DefaultConfig",
 ]
+
+if django.VERSION[0] >= 5:
+    # db_default attribute was only added in Django 5.0
+    INSTALLED_APPS.append(
+        "tests.test_project.app_add_not_null_column_followed_by_db_default"
+    )
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
